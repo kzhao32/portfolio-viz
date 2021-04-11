@@ -98,7 +98,12 @@ console.log(currentAsset);
     ctx.fillRect(startX, startY, width, height);
     ctx.fillStyle = penStyle;
     ctx.font = "30px serif";
-    ctx.fillText(currentAsset.ticker, startX + width / 2 - currentAsset.ticker.length * 10, startY + height / 2 + 15);
+    ctx.fillText(currentAsset.ticker, startX + width / 2 - currentAsset.ticker.length * 10, startY + height / 2);
+    let percentChangeStr = `${(currentAsset.percentChange * 100).toFixed(2)}%`;
+    if (percentChangeStr[0] != '-') {
+      percentChangeStr = '+' + percentChangeStr;
+    }
+    ctx.fillText(percentChangeStr, startX + width / 2 - percentChangeStr.length * 10, startY + height / 2 + 30);
 
     remainingMarketValue -= currentAsset.price * currentAsset.shares;
     if (remainingCanvasWidth < remainingCanvasHeight) {
