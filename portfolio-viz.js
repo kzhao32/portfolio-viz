@@ -1,5 +1,8 @@
 // Global
 let assets = []
+// This is for asset box coloring.
+const fillStyles = ["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837"];
+
 
 let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
@@ -45,39 +48,70 @@ fReader.onload = async function(e) {
   }
 console.log(assets);
 console.log(`totalMarketValue: ${totalMarketValue}`);
-console.log(`marketValueHeap: `);
-while (marketValueHeap.size() > 0) {
-  console.log(marketValueHeap.pop());
-}
+// console.log(`marketValueHeap: `);
+  // while (marketValueHeap.size() > 0) {
+  //   console.log(marketValueHeap.pop());
+  // }
 
-  let canvas = document.getElementById("myCanvas");
-  let ctx = canvas.getContext("2d");
+  // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
   let height = (window.innerHeight > 0) ? window.innerHeight : screen.height;
+
+  // Draw the portfolio map.
+  let canvas = document.getElementById("myCanvas");
+  let ctx = canvas.getContext("2d");
+  // Adjust the canvas size.
   ctx.canvas.width = width * 0.975;
   ctx.canvas.height = height * 0.975;
-console.log(canvas);
-console.log(ctx);
-console.log(ctx.canvas.width);
-console.log(ctx.canvas.height);
-  ctx.fillStyle = "#00FF00";
-  ctx.fillRect(0,0,(220+21)/442*500,500);
-  ctx.fillStyle = "#000000";
-  ctx.font = "30px Arial";
-  ctx.fillText("VOO", 100, 500/2);
-  ctx.fillStyle = "#00FFFF";
-  ctx.fillRect((220+21)/442*500,0,500,(120)/(442-(220+21))*500);
-  ctx.fillStyle = "#000000";
-  ctx.fillText("VTI", 350, 150);
-  ctx.fillStyle = "#FF00FF";
-  ctx.fillRect((220+21)/442*500,(120)/(442-(220+21))*500,67/(442-(220+21)-120)*500-(220+21)/442*500,200);
-  ctx.fillStyle = "#000000";
-  ctx.fillText("GOOG", 300, 400);
 
-  ctx.fillStyle = "#FF0000";
-  ctx.fillRect(67/(442-(220+21)-120)*500,(120)/(442-(220+21))*500,500,60);
-  ctx.fillStyle = "#000000";
-  ctx.fillText("GOOG", 300, 400);
+  let remainingCanvasWidth = ctx.canvas.width;
+  let remainingCanvasHeight = ctx.canvas.height;
+  let remainingMarketValue = totalMarketValue;
+
+  // Get the next top asset
+  // Draw a rectangle hamburger-style into the remaining canvas space
+  // Calculate how large the rectangle should be based off the totalMarketValue: asset.price * asset.shares / totalMarketValue
+  // The rectangle should be colored based on the percent change
+  // Fill in some text like the ticker name and percent change (centered if possible)
+  // Keep track of what the remaining space is
+  curColor = 0;
+  while (marketValueHeap.size() > 0) {
+    let currentAsset = marketValueHeap.pop();
+console.log(currentAsset);
+    let portion = currentAsset.price * currentAsset.shares / remainingMarketValue;
+    let startX = ctx.canvas.width - remainingCanvasWidth;
+    let startY = ctx.canvas.height - remainingCanvasHeight;
+    // if landscape, we want to make a vertical cut
+    // set endX to be some calculation
+    // set endY to be the entire remainder of the canvas
+    let width = remainingCanvasWidth * portion;
+    let height = remainingCanvasHeight;
+    // If portrait...
+    if (remainingCanvasWidth < remainingCanvasHeight) {
+      // Make horizontal cut.
+      width = remainingCanvasWidth;
+      height = remainingCanvasHeight * portion;
+    }
+    let [penStyle, fillStyle] = getStyles(currentAsset.percentChange * 100);
+    drawBorder(ctx, startX, startY, width, height);
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(startX, startY, width, height);
+    ctx.fillStyle = penStyle;
+    ctx.font = "30px serif";
+    ctx.fillText(currentAsset.ticker, startX + width / 2 - currentAsset.ticker.length * 10, startY + height / 2 + 15);
+
+    remainingMarketValue -= currentAsset.price * currentAsset.shares;
+    if (remainingCanvasWidth < remainingCanvasHeight) {
+      remainingCanvasHeight -= height;
+    }
+    else {
+      remainingCanvasWidth -= width;
+    }
+  }
+  // ctx.fillStyle = "#FF0000";
+  // ctx.fillRect(67/(442-(220+21)-120)*500,(120)/(442-(220+21))*500,500,60);
+  // ctx.fillStyle = "#000000";
+  // ctx.fillText("GOOG", 300, 400);
 }
 
 fileInput.onchange = function(e) {
@@ -207,3 +241,43 @@ BinaryHeap.prototype = {
     }
   }
 };
+
+function getStyles(percentChange) {
+  if (percentChange < -2.5) {
+      return ["#FFFFFF", fillStyles[0]];
+  }
+  if (percentChange < -2.0) {
+      return ["#FFFFFF", fillStyles[1]];
+  }
+  if (percentChange < -1.5) {
+      return ["#000000", fillStyles[2]];
+  }
+  if (percentChange < -1.0) {
+      return ["#000000", fillStyles[3]];
+  }
+  if (percentChange < -0.5) {
+      return ["#000000", fillStyles[4]];
+  }
+  if (percentChange > 2.5) {
+      return ["#FFFFFF", fillStyles[10]];
+  }
+  if (percentChange > 2.0) {
+      return ["#FFFFFF", fillStyles[9]];
+  }
+  if (percentChange > 1.5) {
+      return ["#000000", fillStyles[8]];
+  }
+  if (percentChange > 1.0) {
+      return ["#000000", fillStyles[7]];
+  }
+  if (percentChange > 0.5) {
+      return ["#000000", fillStyles[6]];
+  }
+  return ["#000000", fillStyles[5]];
+}
+
+function drawBorder(ctx, xPos, yPos, width, height, thickness=1)
+{
+  ctx.fillStyle='#000';
+  ctx.fillRect(xPos - (thickness), yPos - (thickness), width + (thickness * 2), height + (thickness * 2));
+}
