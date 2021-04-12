@@ -29,6 +29,7 @@ async function drawPortfolioViz(e) {
     }
     stocks_price_check.push(parsedCsv.data[i][0].trim().toUpperCase())
   }
+//console.log(stocks_price_check)
   // Get stock prices here.
   let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
     method: 'POST',
@@ -43,6 +44,7 @@ async function drawPortfolioViz(e) {
   // Then need to filter out header and empty rows again to get the index to match with the responses.
   let totalMarketValue = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
+//console.log("stocks_price_check.length = " + stocks_price_check.length + ", responseJson.length = " + responseJson.length);
   for (let i = 0, response_index = 0; i < parsedCsv.data.length; i++) {
     // Account for header and empty rows.
     if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
@@ -51,6 +53,7 @@ async function drawPortfolioViz(e) {
     let shares = parsedCsv.data[i][1];
     let price = responseJson[response_index].price;
     let asset = new Asset(responseJson[response_index].ticker, shares, price, responseJson[response_index].percent_change);
+//console.log("asset from responseJson: responseJson[response_index].ticker = " + responseJson[response_index].ticker + ", responseJson[response_index].percent_change = " + responseJson[response_index].percent_change);
     // Update data array.
     assets.push(asset);
     marketValueHeap.push(asset);
@@ -128,6 +131,7 @@ function drawPortfolioVizRecursive(
         percentChangeStr = '+' + percentChangeStr;
       }
       ctx.fillText(percentChangeStr, startX + width / 2 - percentChangeStr.length * 10, startY + height / 2 + 30);
+console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
 
       entireMarketValue -= leftAsset.price * leftAsset.shares;
       // If remaining area is portrait...
@@ -149,7 +153,7 @@ function drawPortfolioVizRecursive(
       leftMarketValueHeap.push(leftAsset);
       while (leftMarketValue < 0.5 * rightMarketValue) {
         let nextAsset = rightMarketValueHeap.pop();
-        if (leftMarketValue + nextAsset.price * nextAsset.shares < 0.5 * entireMarketValue) {
+        if (leftMarketValue + nextAsset.price * nextAsset.shares < rightMarketValue) {
           rightMarketValue -= nextAsset.price * nextAsset.shares;
           leftMarketValue += nextAsset.price * nextAsset.shares;
           leftMarketValueHeap.push(nextAsset);
