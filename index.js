@@ -6,9 +6,9 @@ const canvasRatio = 0.96;
 // This is for asset box coloring.
 const fillStyles = ["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837"];
 
-
 let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
+
 
 fReader.onload = function(e) {
   // Allow global access to event.
@@ -57,12 +57,7 @@ async function drawPortfolioViz(e) {
     totalMarketValue += price * shares;
     response_index++;
   }
-console.log(assets);
-console.log(`totalMarketValue: ${totalMarketValue}`);
-// console.log(`marketValueHeap: `);
-  // while (marketValueHeap.size() > 0) {
-  //   console.log(marketValueHeap.pop());
-  // }
+// console.log(assets);
 
   // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -107,7 +102,6 @@ function drawPortfolioVizRecursive(
   // Keep track of what the remaining space is
   while (rightMarketValueHeap.size() > 0) {
     let leftAsset = rightMarketValueHeap.pop();
-console.log(leftAsset);
     if (rightMarketValueHeap.size() == 0) {
       let portion = leftAsset.price * leftAsset.shares / entireMarketValue;
 
@@ -195,6 +189,7 @@ fileInput.onchange = function(e) {
     let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
     fReader.readAsText(file);
     this.style.display = "none";
+    document.title = file.name + " Portfolio Map";
 }
 
 function resizedWindow(){
@@ -210,6 +205,12 @@ window.onresize = function() {
   clearTimeout(timerId);
   timerId = setTimeout(resizedWindow, 1000);
 };
+
+setInterval(function() {
+  if (hasFileBeenUploaded) {
+    drawPortfolioViz(fileOnloadEvent);
+  }
+}, 60 * 1000);
 
 class Asset {
   constructor(ticker, shares, price, percentChange) {
