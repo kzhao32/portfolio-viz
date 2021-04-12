@@ -27,7 +27,7 @@ async function drawPortfolioViz(e) {
     if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
       continue;
     }
-    stocks_price_check.push(parsedCsv.data[i][0])
+    stocks_price_check.push(parsedCsv.data[i][0].trim().toUpperCase())
   }
   // Get stock prices here.
   let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
@@ -122,7 +122,7 @@ function drawPortfolioVizRecursive(
       ctx.fillRect(startX, startY, width, height);
       ctx.fillStyle = penStyle;
       ctx.font = "30px serif";
-      ctx.fillText(leftAsset.ticker.toUpperCase(), startX + width / 2 - leftAsset.ticker.length * 10, startY + height / 2);
+      ctx.fillText(leftAsset.ticker, startX + width / 2 - leftAsset.ticker.length * 10, startY + height / 2);
       let percentChangeStr = `${(leftAsset.percentChange * 100).toFixed(2)}%`;
       if (percentChangeStr[0] != '-') {
         percentChangeStr = '+' + percentChangeStr;
