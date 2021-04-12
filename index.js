@@ -68,50 +68,116 @@ console.log(`totalMarketValue: ${totalMarketValue}`);
   let remainingCanvasHeight = ctx.canvas.height;
   let remainingMarketValue = totalMarketValue;
 
+  drawPortfolioVizRecursive(
+    ctx,
+    marketValueHeap,
+    remainingCanvasWidth,
+    remainingCanvasHeight,
+    remainingMarketValue,
+    0,
+    0,
+  );
+}
+
+function drawPortfolioVizRecursive(
+  ctx,
+  rightMarketValueHeap,
+  entireCanvasWidth,
+  entireCanvasHeight,
+  entireMarketValue,
+  startX,
+  startY,
+) {
   // Get the next top asset
   // Draw a rectangle hamburger-style into the remaining canvas space
   // Calculate how large the rectangle should be based off the totalMarketValue: asset.price * asset.shares / totalMarketValue
   // The rectangle should be colored based on the percent change
   // Fill in some text like the ticker name and percent change (centered if possible)
   // Keep track of what the remaining space is
-  curColor = 0;
-  while (marketValueHeap.size() > 0) {
-    let currentAsset = marketValueHeap.pop();
-console.log(currentAsset);
-    let portion = currentAsset.price * currentAsset.shares / remainingMarketValue;
-    let startX = ctx.canvas.width - remainingCanvasWidth;
-    let startY = ctx.canvas.height - remainingCanvasHeight;
-    // if landscape, we want to make a vertical cut
-    // set endX to be some calculation
-    // set endY to be the entire remainder of the canvas
-    let width = remainingCanvasWidth * portion;
-    let height = remainingCanvasHeight;
-    // If portrait...
-    if (remainingCanvasWidth < remainingCanvasHeight) {
-      // Make horizontal cut.
-      width = remainingCanvasWidth;
-      height = remainingCanvasHeight * portion;
-    }
-    let [penStyle, fillStyle] = getStyles(currentAsset.percentChange * 100);
-    drawBorder(ctx, startX, startY, width, height);
-    ctx.fillStyle = fillStyle;
-    ctx.fillRect(startX, startY, width, height);
-    ctx.fillStyle = penStyle;
-    ctx.font = "30px serif";
-    ctx.fillText(currentAsset.ticker, startX + width / 2 - currentAsset.ticker.length * 10, startY + height / 2 + 15);
+  while (rightMarketValueHeap.size() > 0) {
+    let leftAsset = rightMarketValueHeap.pop();
+console.log(leftAsset);
+    if (rightMarketValueHeap.size() == 0) {
+      let portion = leftAsset.price * leftAsset.shares / entireMarketValue;
 
-    remainingMarketValue -= currentAsset.price * currentAsset.shares;
-    if (remainingCanvasWidth < remainingCanvasHeight) {
-      remainingCanvasHeight -= height;
+      // if landscape, we want to make a vertical cut
+      // set endX to be some calculation
+      // set endY to be the entire remainder of the canvas
+      let width = entireCanvasWidth * portion;
+      let height = entireCanvasHeight;
+      // If portrait...
+      if (entireCanvasWidth < entireCanvasHeight) {
+        // Make horizontal cut.
+        width = entireCanvasWidth;
+        height = entireCanvasHeight * portion;
+      }
+      let [penStyle, fillStyle] = getStyles(leftAsset.percentChange * 100);
+      drawBorder(ctx, startX, startY, width, height);
+      ctx.fillStyle = fillStyle;
+      ctx.fillRect(startX, startY, width, height);
+      ctx.fillStyle = penStyle;
+      ctx.font = "30px serif";
+      ctx.fillText(leftAsset.ticker, startX + width / 2 - leftAsset.ticker.length * 10, startY + height / 2);
+      let percentChangeStr = `${(leftAsset.percentChange * 100).toFixed(2)}%`;
+      if (percentChangeStr[0] != '-') {
+        percentChangeStr = '+' + percentChangeStr;
+      }
+      ctx.fillText(percentChangeStr, startX + width / 2 - percentChangeStr.length * 10, startY + height / 2 + 30);
+
+      entireMarketValue -= leftAsset.price * leftAsset.shares;
+      // If remaining area is portrait...
+      if (entireCanvasWidth < entireCanvasHeight) {
+        entireCanvasHeight -= height;
+        startY += height;
+      }
+      else {
+        entireCanvasWidth -= width;
+        startX += width;
+      }
     }
     else {
-      remainingCanvasWidth -= width;
+      // Split heap into two. Always put the most valuable asset into the left heap.
+      // Continue putting assets into the left heap while the left heap is worth less than half of the entireMarketValue
+      let leftMarketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
+      let leftMarketValue = leftAsset.price * leftAsset.shares;
+      let rightMarketValue = entireMarketValue - leftAsset.price * leftAsset.shares;
+      leftMarketValueHeap.push(leftAsset);
+      while (leftMarketValue < 0.5 * rightMarketValue) {
+        let nextAsset = rightMarketValueHeap.pop();
+        if (leftMarketValue + nextAsset.price * nextAsset.shares < 0.5 * entireMarketValue) {
+          rightMarketValue -= nextAsset.price * nextAsset.shares;
+          leftMarketValue += nextAsset.price * nextAsset.shares;
+          leftMarketValueHeap.push(nextAsset);
+        }
+        else {
+          rightMarketValueHeap.push(nextAsset);
+          break; // done splitting into 2 heaps
+        }
+      }
+
+      let isPortrait = entireCanvasWidth < entireCanvasHeight;
+      // draw left/top side of the portfolio
+      drawPortfolioVizRecursive(
+        ctx,
+        leftMarketValueHeap,
+        /* entireCanvasWidth = */ isPortrait ? entireCanvasWidth : entireCanvasWidth * leftMarketValue / entireMarketValue, // if isPortrait, then make a horizontal cut, so (left and right) xor (top and bottom) get the entire width
+        /* entireCanvasHeight = */ isPortrait ? entireCanvasHeight * leftMarketValue / entireMarketValue : entireCanvasHeight,
+        /* entireMarketValue = */ leftMarketValue,
+        /* startX = */ startX,
+        /* startY = */ startY,
+      );
+      // draw right/bottom side of the portfolio
+      drawPortfolioVizRecursive(
+        ctx,
+        rightMarketValueHeap,
+        /* entireCanvasWidth = */ isPortrait ? entireCanvasWidth : entireCanvasWidth * rightMarketValue / entireMarketValue,
+        /* entireCanvasHeight = */ isPortrait ? entireCanvasHeight * rightMarketValue / entireMarketValue : entireCanvasHeight,
+        /* entireMarketValue = */ rightMarketValue,
+        /* startX = */ isPortrait ? startX : startX + leftMarketValue / entireMarketValue * entireCanvasWidth, // if isPortrait, then make a horizontal cut, so startX stays the same, and adjust startY proportionally to market value
+        /* startY = */ isPortrait ? startY + leftMarketValue / entireMarketValue * entireCanvasHeight : startY,
+      );
     }
   }
-  // ctx.fillStyle = "#FF0000";
-  // ctx.fillRect(67/(442-(220+21)-120)*500,(120)/(442-(220+21))*500,500,60);
-  // ctx.fillStyle = "#000000";
-  // ctx.fillText("GOOG", 300, 400);
 }
 
 fileInput.onchange = function(e) {
@@ -129,6 +195,7 @@ class Asset {
   }
 }
 
+// Taken from Eloquent JavaScript.
 function BinaryHeap(scoreFunction){
   this.content = [];
   this.scoreFunction = scoreFunction;
