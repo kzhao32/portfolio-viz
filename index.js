@@ -1,5 +1,8 @@
 // Global
 let assets = []
+let fileOnloadEvent;
+let hasFileBeenUploaded = false;
+const canvasRatio = 0.96;
 // This is for asset box coloring.
 const fillStyles = ["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837"];
 
@@ -7,7 +10,15 @@ const fillStyles = ["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#fff
 let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
 
-fReader.onload = async function(e) {
+fReader.onload = function(e) {
+  // Allow global access to event.
+  fileOnloadEvent = e;
+  hasFileBeenUploaded = true;
+
+  drawPortfolioViz(e);
+}
+
+async function drawPortfolioViz(e) {
   // Parse uploaded file.
   let parsedCsv = Papa.parse(e.target.result);
   stocks_price_check = []
@@ -61,8 +72,8 @@ console.log(`totalMarketValue: ${totalMarketValue}`);
   let canvas = document.getElementById("myCanvas");
   let ctx = canvas.getContext("2d");
   // Adjust the canvas size.
-  ctx.canvas.width = width * 0.975;
-  ctx.canvas.height = height * 0.975;
+  ctx.canvas.width = width * canvasRatio;
+  ctx.canvas.height = height * canvasRatio;
 
   let remainingCanvasWidth = ctx.canvas.width;
   let remainingCanvasHeight = ctx.canvas.height;
@@ -117,7 +128,7 @@ console.log(leftAsset);
       ctx.fillRect(startX, startY, width, height);
       ctx.fillStyle = penStyle;
       ctx.font = "30px serif";
-      ctx.fillText(leftAsset.ticker, startX + width / 2 - leftAsset.ticker.length * 10, startY + height / 2);
+      ctx.fillText(leftAsset.ticker.toUpperCase(), startX + width / 2 - leftAsset.ticker.length * 10, startY + height / 2);
       let percentChangeStr = `${(leftAsset.percentChange * 100).toFixed(2)}%`;
       if (percentChangeStr[0] != '-') {
         percentChangeStr = '+' + percentChangeStr;
@@ -185,6 +196,20 @@ fileInput.onchange = function(e) {
     fReader.readAsText(file);
     this.style.display = "none";
 }
+
+function resizedWindow(){
+  // Haven't resized in 1000ms!
+  // After done resizing...
+  if (hasFileBeenUploaded) {
+    drawPortfolioViz(fileOnloadEvent);
+  }
+}
+
+let timerId;
+window.onresize = function() {
+  clearTimeout(timerId);
+  timerId = setTimeout(resizedWindow, 1000);
+};
 
 class Asset {
   constructor(ticker, shares, price, percentChange) {
