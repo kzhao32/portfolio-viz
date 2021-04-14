@@ -157,7 +157,7 @@ console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" +
       let leftMarketValue = leftAsset.price * leftAsset.shares;
       let rightMarketValue = entireMarketValue - leftAsset.price * leftAsset.shares;
       leftMarketValueHeap.push(leftAsset);
-      while (leftMarketValue < 0.5 * rightMarketValue) {
+      while (leftMarketValue < 0.5 * rightMarketValue && rightMarketValueHeap.size() > 0) {
         let nextAsset = rightMarketValueHeap.pop();
         if (leftMarketValue + nextAsset.price * nextAsset.shares < rightMarketValue) {
           rightMarketValue -= nextAsset.price * nextAsset.shares;
