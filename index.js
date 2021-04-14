@@ -2,9 +2,8 @@
 let assets = []
 let fileOnloadEvent;
 let hasFileBeenUploaded = false;
-const canvasRatio = 0.96;
 // This is for asset box coloring.
-const fillStyles = ["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837"];
+const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837", "#00441b"];
 
 let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
@@ -43,6 +42,7 @@ async function drawPortfolioViz(e) {
   // Assume that responses come back in the same order that stocks_price_check requested.
   // Then need to filter out header and empty rows again to get the index to match with the responses.
   let totalMarketValue = 0;
+  let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
 //console.log("stocks_price_check.length = " + stocks_price_check.length + ", responseJson.length = " + responseJson.length);
   for (let i = 0, response_index = 0; i < parsedCsv.data.length; i++) {
@@ -52,15 +52,17 @@ async function drawPortfolioViz(e) {
     }
     let shares = parsedCsv.data[i][1];
     let price = responseJson[response_index].price;
-    let asset = new Asset(responseJson[response_index].ticker, shares, price, responseJson[response_index].percent_change);
-//console.log("asset from responseJson: responseJson[response_index].ticker = " + responseJson[response_index].ticker + ", responseJson[response_index].percent_change = " + responseJson[response_index].percent_change);
+    let percentChange = responseJson[response_index].percent_change;
+    let asset = new Asset(responseJson[response_index].ticker, shares, price, percentChange);
+//console.log("asset from responseJson: responseJson[response_index].ticker = " + responseJson[response_index].ticker + ", percentChange = " + percentChange);
     // Update data array.
     assets.push(asset);
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
+    totalChange += price * shares * percentChange;
     response_index++;
   }
-// console.log(assets);
+//console.log(assets);
 
   // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -68,10 +70,11 @@ async function drawPortfolioViz(e) {
 
   // Draw the portfolio map.
   let canvas = document.getElementById("myCanvas");
+  canvas.style.display = "block";
   let ctx = canvas.getContext("2d");
   // Adjust the canvas size.
-  ctx.canvas.width = width * canvasRatio;
-  ctx.canvas.height = height * canvasRatio;
+  ctx.canvas.width = width * 0.97;
+  ctx.canvas.height = height * 0.95;
 
   let remainingCanvasWidth = ctx.canvas.width;
   let remainingCanvasHeight = ctx.canvas.height;
@@ -86,6 +89,9 @@ async function drawPortfolioViz(e) {
     0,
     0,
   );
+  let info = document.getElementById("info");
+  info.textContent = "TotalMarketValue = $" + Math.round(totalMarketValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "; Change = " + (totalChange > 0 ? "+" : "") + Math.round(totalChange).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " (" + (totalChange / totalMarketValue * 100).toFixed(2) + "%)";
+  info.style.color = totalChange > 0 ? "green" : (totalChange < 0 ? "red" : "black");
 }
 
 function drawPortfolioVizRecursive(
@@ -130,7 +136,7 @@ function drawPortfolioVizRecursive(
       if (percentChangeStr[0] != '-') {
         percentChangeStr = '+' + percentChangeStr;
       }
-      ctx.fillText(percentChangeStr, startX + width / 2 - percentChangeStr.length * 10, startY + height / 2 + 30);
+      ctx.fillText(percentChangeStr, startX + width / 2 - percentChangeStr.length * 9, startY + height / 2 + 30);
 console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
 
       entireMarketValue -= leftAsset.price * leftAsset.shares;
@@ -192,8 +198,8 @@ console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" +
 fileInput.onchange = function(e) {
     let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
     fReader.readAsText(file);
-    this.style.display = "none";
     document.title = file.name + " Portfolio Map";
+    // this.style.display = "none";
 }
 
 function resizedWindow(){
@@ -340,37 +346,102 @@ BinaryHeap.prototype = {
 };
 
 function getStyles(percentChange) {
+  // Handle extreme ends.
+  if (percentChange < -10) {
+      return ["#FFFFFF", fillStyles[0]]
+  }
+  if (percentChange > 10) {
+      return ["#FFFFFF", fillStyles[fillStyles.length - 1]]
+  }
+  // Compute the left and right color and value.
+  // Return the color based on linear regression of the 2 colors.
+  let leftColor = fillStyles[6];
+  let leftValue = 0.0;
+  let rightColor = fillStyles[7];
+  let rightValue = 0.5;
+  let penStyle = "#000000";
   if (percentChange < -2.5) {
-      return ["#FFFFFF", fillStyles[0]];
+      leftColor = fillStyles[0];
+      leftValue = -10.0;
+      rightColor = fillStyles[1];
+      rightValue = -2.5;
+      penStyle = "#FFFFFF";
   }
-  if (percentChange < -2.0) {
-      return ["#FFFFFF", fillStyles[1]];
+  else if (percentChange < -2.0) {
+      leftColor = fillStyles[1];
+      leftValue = -2.5;
+      rightColor = fillStyles[2];
+      rightValue = -2.0;
+      penStyle = "#FFFFFF";
   }
-  if (percentChange < -1.5) {
-      return ["#000000", fillStyles[2]];
+  else if (percentChange < -1.5) {
+      leftColor = fillStyles[2];
+      leftValue = -2.0;
+      rightColor = fillStyles[3];
+      rightValue = -1.5;
   }
-  if (percentChange < -1.0) {
-      return ["#000000", fillStyles[3]];
+  else if (percentChange < -1.0) {
+      leftColor = fillStyles[3];
+      leftValue = -1.5;
+      rightColor = fillStyles[4];
+      rightValue = -1.0;
   }
-  if (percentChange < -0.5) {
-      return ["#000000", fillStyles[4]];
+  else if (percentChange < -0.5) {
+      leftColor = fillStyles[4];
+      leftValue = -1.0;
+      rightColor = fillStyles[5];
+      rightValue = -0.5;
   }
-  if (percentChange > 2.5) {
-      return ["#FFFFFF", fillStyles[10]];
+  else if (percentChange < 0.0) {
+      leftColor = fillStyles[5];
+      leftValue = -0.5;
+      rightColor = fillStyles[6];
+      rightValue = 0.0;
   }
-  if (percentChange > 2.0) {
-      return ["#FFFFFF", fillStyles[9]];
+  else if (percentChange > 2.5) {
+      leftColor = fillStyles[11];
+      leftValue = 2.5;
+      rightColor = fillStyles[12];
+      rightValue = 10.0;
+      penStyle = "#FFFFFF";
   }
-  if (percentChange > 1.5) {
-      return ["#000000", fillStyles[8]];
+  else if (percentChange > 2.0) {
+      leftColor = fillStyles[10];
+      leftValue = 2.0;
+      rightColor = fillStyles[11];
+      rightValue = 2.5;
+      penStyle = "#FFFFFF";
   }
-  if (percentChange > 1.0) {
-      return ["#000000", fillStyles[7]];
+  else if (percentChange > 1.5) {
+      leftColor = fillStyles[9];
+      leftValue = 1.5;
+      rightColor = fillStyles[10];
+      rightValue = 2.0;
   }
-  if (percentChange > 0.5) {
-      return ["#000000", fillStyles[6]];
+  else if (percentChange > 1.0) {
+      leftColor = fillStyles[8];
+      leftValue = 1.0;
+      rightColor = fillStyles[9];
+      rightValue = 1.5;
   }
-  return ["#000000", fillStyles[5]];
+  else if (percentChange > 0.5) {
+      leftColor = fillStyles[7];
+      leftValue = 0.5;
+      rightColor = fillStyles[8];
+      rightValue = 1.0;
+  }
+  let leftRed = parseInt(leftColor.substring(1, 3), 16);
+  let leftGreen = parseInt(leftColor.substring(3, 5), 16);
+  let leftBlue = parseInt(leftColor.substring(5, 7), 16);
+  let rightRed = parseInt(rightColor.substring(1, 3), 16);
+  let rightGreen = parseInt(rightColor.substring(3, 5), 16);
+  let rightBlue = parseInt(rightColor.substring(5, 7), 16);
+  // y = m*x+b = (rise/run)*x + b
+  let red = Math.round((rightRed - leftRed)/(rightValue - leftValue)*(percentChange - leftValue) + leftRed);
+  let green = Math.round((rightGreen - leftGreen)/(rightValue - leftValue)*(percentChange - leftValue) + leftGreen);
+  let blue = Math.round((rightBlue - leftBlue)/(rightValue - leftValue)*(percentChange - leftValue) + leftBlue);
+//console.log("for percentChange = " + percentChange + ", leftColor = " + leftColor + ", leftValue = " + leftValue + ", rightColor = " + rightColor + ", rightValue = " + rightValue + ", returning " + "#" + ("0"+(Number(red).toString(16))).slice(-2) + ("0"+(Number(green).toString(16))).slice(-2) + ("0"+(Number(blue).toString(16))).slice(-2));
+  return [penStyle, "#" + ("0"+(Number(red).toString(16))).slice(-2) + ("0"+(Number(green).toString(16))).slice(-2) + ("0"+(Number(blue).toString(16))).slice(-2)];
 }
 
 function drawBorder(ctx, xPos, yPos, width, height, thickness=1)

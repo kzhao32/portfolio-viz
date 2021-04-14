@@ -8,13 +8,14 @@
 <body>
 
 <div>
-  <input id="myfile" type="file"/>
+  <canvas id="myCanvas" width="100px" height="100px" style="border:1px solid #c3c3c3; display: none;">
+    Your browser does not support the canvas element.
+  </canvas>
 </div>
 
 <div>
-  <canvas id="myCanvas" width="100%" height="100%" style="border:1px solid #c3c3c3;">
-    Your browser does not support the canvas element.
-  </canvas>
+  <input id="myfile" type="file"/>
+  <span id="info"></span>
 </div>
 
 <script src="index.js"></script>
