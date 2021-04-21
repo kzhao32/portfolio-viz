@@ -1,6 +1,9 @@
 // Global
 let fileOnloadEvent;
 let hasFileBeenUploaded = false;
+let lock = false;
+let tickersDict;
+let stockData;
 // This is for asset box coloring.
 const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837", "#00441b"];
 // Array of the rects
@@ -15,25 +18,25 @@ let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
 
 
+console.log("start");
+
 fileInput.onchange = function(e) {
   let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
   fReader.readAsText(file);
   document.title = file.name + " Portfolio Map";
-  document.getElementById("tutorial").style.display = "none";
 }
 
-fReader.onload = function(e) {
+fReader.onload = async function(e) {
   // Allow global access to event.
   fileOnloadEvent = e;
-  hasFileBeenUploaded = true;
-  drawPortfolioViz(e);
-}
 
-async function drawPortfolioViz(e) {
   // Parse uploaded file.
-  let parsedCsv = Papa.parse(e.target.result);
-  let tickersDict = {} // create a dictionary because not all stocks will return data. E.g. ALDR
-  let stocks_price_check = []
+  const parsedCsv = Papa.parse(e.target.result);
+
+  while (lock);
+  lock = true;
+  tickersDict = {} // create a dictionary because not all stocks will return data. E.g. ALDR
+  let stocksToPriceCheck = []
   for (let i = 0; i < parsedCsv.data.length; i++) {
     // Account for header and empty rows.
     if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
@@ -41,17 +44,39 @@ async function drawPortfolioViz(e) {
     }
     let ticker = parsedCsv.data[i][0].trim().toUpperCase().replace(".", "-")
     tickersDict[ticker] = parsedCsv.data[i][1]
-    stocks_price_check.push(ticker)
+    stocksToPriceCheck.push(ticker)
   }
+  lock = false;
 
   // Get stock prices here.
-  let stockData = await getData(stocks_price_check);
+  await updateStockData(stocksToPriceCheck);
 
-  // Assume that responses come back in the same order that stocks_price_check requested.
+  drawPortfolioViz();
+
+  // Do stuff here only after the first upload.
+  if (!hasFileBeenUploaded) {
+    // Refresh data at set interval.
+    setInterval(async function() {
+console.log("refreshing data");
+      await updateStockData(stocksToPriceCheck);
+      drawPortfolioViz();
+    }, 60 * 1000);
+
+    document.getElementById("tutorial").style.display = "none";
+    hasFileBeenUploaded = true;
+  }
+
+}
+
+function drawPortfolioViz() {
+  // Assume that responses come back in the same order that stocksToPriceCheck requested.
   // Then need to filter out header and empty rows again to get the index to match with the responses.
   let totalMarketValue = 0;
   let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
+
+  while (lock);
+  lock = true;
   for (let i = 0; i < stockData.length; i++) {
     let ticker = stockData[i].ticker;
     let shares = tickersDict[ticker];
@@ -63,6 +88,7 @@ async function drawPortfolioViz(e) {
     totalMarketValue += price * shares;
     totalChange += (price - price / (1 + percentChange / 100)) * shares;
   }
+  lock = false;
 
   // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -226,7 +252,7 @@ function resizedWindow(){
   // Haven't resized in 1000ms!
   // After done resizing...
   if (hasFileBeenUploaded) {
-    drawPortfolioViz(fileOnloadEvent);
+    drawPortfolioViz();
   }
 }
 
@@ -236,14 +262,8 @@ window.onresize = function() {
   timerId = setTimeout(resizedWindow, 1000);
 };
 
-// Refresh data at set interval.
-setInterval(function() {
-  if (hasFileBeenUploaded) {
-    drawPortfolioViz(fileOnloadEvent);
-  }
-}, 60 * 1000);
-
-async function getData(tickers) {
+async function updateStockData(tickers) {
+console.log("getting data");
   // Get stock prices here.
   let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
     method: 'POST',
@@ -252,7 +272,11 @@ async function getData(tickers) {
     },
     body: JSON.stringify({'tickers': tickers})
   });
-  return await response.json();
+
+  while (lock);
+  lock = true;
+  stockData = await response.json();
+  lock = false;
 }
 
 class Asset {
