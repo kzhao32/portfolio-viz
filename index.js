@@ -25,13 +25,16 @@ fReader.onload = function(e) {
 async function drawPortfolioViz(e) {
   // Parse uploaded file.
   let parsedCsv = Papa.parse(e.target.result);
-  stocks_price_check = []
+  let tickersDict = {} // create a dictionary because not all stocks will return data. E.g. ALDR
+  let stocks_price_check = []
   for (let i = 0; i < parsedCsv.data.length; i++) {
     // Account for header and empty rows.
     if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
       continue;
     }
-    stocks_price_check.push(parsedCsv.data[i][0].trim().toUpperCase())
+    let ticker = parsedCsv.data[i][0].trim().toUpperCase().replace(".", "-")
+    tickersDict[ticker] = parsedCsv.data[i][1]
+    stocks_price_check.push(ticker)
   }
 //console.log(stocks_price_check)
   // Get stock prices here.
@@ -50,22 +53,18 @@ async function drawPortfolioViz(e) {
   let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
 //console.log("stocks_price_check.length = " + stocks_price_check.length + ", responseJson.length = " + responseJson.length);
-  for (let i = 0, response_index = 0; i < parsedCsv.data.length; i++) {
-    // Account for header and empty rows.
-    if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
-      continue;
-    }
-    let shares = parsedCsv.data[i][1];
-    let price = responseJson[response_index].price;
-    let percentChange = responseJson[response_index].percent_change;
-    let asset = new Asset(responseJson[response_index].ticker, responseJson[response_index].name, shares, price, percentChange);
-//console.log("asset from responseJson: responseJson[response_index].ticker = " + responseJson[response_index].ticker + ", percentChange = " + percentChange);
+  for (let i = 0; i < responseJson.length; i++) {
+    let ticker = responseJson[i].ticker;
+    let shares = tickersDict[ticker];
+    let price = responseJson[i].price;
+    let percentChange = responseJson[i].percent_change;
+    let asset = new Asset(ticker, responseJson[i].name, shares, price, percentChange);
+//console.log("asset from responseJson: responseJson[i].ticker = " + responseJson[i].ticker + ", percentChange = " + percentChange);
     // Update data array.
     console.log(asset)
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
     totalChange += price * shares * percentChange/100;
-    response_index++;
   }
 
   // Determine whether the screen is portrait or landscape.
