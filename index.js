@@ -64,7 +64,7 @@ async function drawPortfolioViz(e) {
     console.log(asset)
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
-    totalChange += price * shares * percentChange;
+    totalChange += price * shares * percentChange/100;
     response_index++;
   }
 
