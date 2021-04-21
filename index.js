@@ -526,18 +526,21 @@ canvas.onmousemove = function(e) {
     }
   }
   try {
-    if (typeof lastRect !== "undefined") {
-      drawOneRect(lastRect);
-    }
-    lastRect = hoveredRect;
-    drawOneRect(hoveredRect, "#FFFFFF");
+    // Only draw rects if on a newly hovered rect.
+    if (lastRect !== hoveredRect) {
+      if (typeof lastRect !== "undefined") {
+        drawOneRect(lastRect);
+      }
+      lastRect = hoveredRect;
+      drawOneRect(hoveredRect, "#FFFFFF");
 
-    let amountChangeStr = (hoveredRect.price - hoveredRect.price / (1 + hoveredRect.percentChange / 100)).toFixed(2);
-    if (amountChangeStr[0] != '-') {
-      amountChangeStr = '+' + amountChangeStr;
+      // Update tooltip based on currently hovered rect.
+      let amountChangeStr = (hoveredRect.price - hoveredRect.price / (1 + hoveredRect.percentChange / 100)).toFixed(2);
+      if (amountChangeStr[0] != '-') {
+        amountChangeStr = '+' + amountChangeStr;
+      }
+      canvas.title = hoveredRect.ticker + (hoveredRect.name.length > 0 ? ("\nName: " + hoveredRect.name) : "") + "\nPrice: " + hoveredRect.price + "\nChange: " + amountChangeStr + " (" + hoveredRect.percentChangeStr + ")" + "\nPortion: " + hoveredRect.portion;
     }
-
-    canvas.title = hoveredRect.ticker + (hoveredRect.name.length > 0 ? ("\nName: " + hoveredRect.name) : "") + "\nPrice: " + hoveredRect.price + "\nChange: " + amountChangeStr + " (" + hoveredRect.percentChangeStr + ")" + "\nPortion: " + hoveredRect.portion;
   }
   catch (e) {
     if (e instanceof TypeError) {
