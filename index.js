@@ -19,7 +19,6 @@ fReader.onload = function(e) {
   // Allow global access to event.
   fileOnloadEvent = e;
   hasFileBeenUploaded = true;
-
   drawPortfolioViz(e);
 }
 
@@ -39,28 +38,21 @@ async function drawPortfolioViz(e) {
   }
 //console.log(stocks_price_check)
   // Get stock prices here.
-  let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8',
-    },
-    body: JSON.stringify({tickers: stocks_price_check})
-  });
-  let responseJson = await response.json();
+  let stockData = await getData(stocks_price_check);
 
   // Assume that responses come back in the same order that stocks_price_check requested.
   // Then need to filter out header and empty rows again to get the index to match with the responses.
   let totalMarketValue = 0;
   let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
-//console.log("stocks_price_check.length = " + stocks_price_check.length + ", responseJson.length = " + responseJson.length);
-  for (let i = 0; i < responseJson.length; i++) {
-    let ticker = responseJson[i].ticker;
+//console.log("stocks_price_check.length = " + stocks_price_check.length + ", stockData.length = " + stockData.length);
+  for (let i = 0; i < stockData.length; i++) {
+    let ticker = stockData[i].ticker;
     let shares = tickersDict[ticker];
-    let price = responseJson[i].price;
-    let percentChange = responseJson[i].percent_change;
-    let asset = new Asset(ticker, responseJson[i].name, shares, price, percentChange);
-//console.log("asset from responseJson: responseJson[i].ticker = " + responseJson[i].ticker + ", percentChange = " + percentChange);
+    let price = stockData[i].price;
+    let percentChange = stockData[i].percent_change;
+    let asset = new Asset(ticker, stockData[i].name, shares, price, percentChange);
+//console.log("asset from stockData: stockData[i].ticker = " + stockData[i].ticker + ", percentChange = " + percentChange);
     // Update data array.
 // console.log(asset)
     marketValueHeap.push(asset);
@@ -252,6 +244,18 @@ setInterval(function() {
     drawPortfolioViz(fileOnloadEvent);
   }
 }, 60 * 1000);
+
+async function getData(tickers) {
+  // Get stock prices here.
+  let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8',
+    },
+    body: JSON.stringify({'tickers': tickers})
+  });
+  return await response.json();
+}
 
 class Asset {
   constructor(ticker, name, shares, price, percentChange) {
