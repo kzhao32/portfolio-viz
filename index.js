@@ -82,6 +82,7 @@ async function drawPortfolioViz(e) {
   let remainingMarketValue = totalMarketValue;
 
   rects = [];
+  lastRect = undefined;
   drawPortfolioVizRecursive(
     ctx,
     marketValueHeap,
@@ -491,8 +492,7 @@ canvas.onmousemove = function(e) {
 // console.log(`e.clientX, e.clientY: ${e.clientX}, ${e.clientY}`)
 // console.log(`x, y: ${x}, ${y}`);
 // console.log(`${rect.startX}\n${rect.startY}`);
-
-  // ctx.clearRect(0, 0, canvas.width, canvas.height); // for demo
+// ctx.clearRect(0, 0, canvas.width, canvas.height); // for demo
 
   let hoveredRect;
   while(r = rects[i++]) {
@@ -505,10 +505,14 @@ canvas.onmousemove = function(e) {
       hoveredRect = r;
     }
     else {
-      drawOneRect(r);
+      // drawOneRect(r);
     }
   }
   try {
+    if (typeof lastRect !== "undefined") {
+      drawOneRect(lastRect);
+    }
+    lastRect = hoveredRect;
     drawOneRect(hoveredRect, "#FFFFFF");
     canvas.title = hoveredRect.ticker + (hoveredRect.name.length > 0 ? ("\nName: " + hoveredRect.name) : "") + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
   }
