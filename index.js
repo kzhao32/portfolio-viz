@@ -15,6 +15,13 @@ let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
 
 
+fileInput.onchange = function(e) {
+  let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
+  fReader.readAsText(file);
+  document.title = file.name + " Portfolio Map";
+  document.getElementById("tutorial").style.display = "none";
+}
+
 fReader.onload = function(e) {
   // Allow global access to event.
   fileOnloadEvent = e;
@@ -213,13 +220,6 @@ function drawPortfolioVizRecursive(
       );
     }
   }
-}
-
-fileInput.onchange = function(e) {
-    let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
-    fReader.readAsText(file);
-    document.title = file.name + " Portfolio Map";
-    // this.style.display = "none";
 }
 
 function resizedWindow(){
@@ -496,7 +496,6 @@ function drawOneRect(rect, borderColor='#000000') {
 }
 
 canvas.onmousemove = function(e) {
-
   // important: correct mouse position:
   var domRect = this.getBoundingClientRect(),
       x = e.clientX - domRect.left,
