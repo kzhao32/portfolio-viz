@@ -36,7 +36,7 @@ async function drawPortfolioViz(e) {
     tickersDict[ticker] = parsedCsv.data[i][1]
     stocks_price_check.push(ticker)
   }
-//console.log(stocks_price_check)
+
   // Get stock prices here.
   let stockData = await getData(stocks_price_check);
 
@@ -45,16 +45,13 @@ async function drawPortfolioViz(e) {
   let totalMarketValue = 0;
   let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
-//console.log("stocks_price_check.length = " + stocks_price_check.length + ", stockData.length = " + stockData.length);
   for (let i = 0; i < stockData.length; i++) {
     let ticker = stockData[i].ticker;
     let shares = tickersDict[ticker];
     let price = stockData[i].price;
     let percentChange = stockData[i].percent_change;
     let asset = new Asset(ticker, stockData[i].name, shares, price, percentChange);
-//console.log("asset from stockData: stockData[i].ticker = " + stockData[i].ticker + ", percentChange = " + percentChange);
     // Update data array.
-// console.log(asset)
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
     totalChange += (price - price / (1 + percentChange / 100)) * shares;
@@ -239,6 +236,7 @@ window.onresize = function() {
   timerId = setTimeout(resizedWindow, 1000);
 };
 
+// Refresh data at set interval.
 setInterval(function() {
   if (hasFileBeenUploaded) {
     drawPortfolioViz(fileOnloadEvent);
@@ -495,7 +493,6 @@ function drawOneRect(rect, borderColor='#000000') {
   ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.fillText(rect.ticker, rect.startX + rect.width / 2 - rect.ticker.length * fontSize/3, rect.startY + rect.height / 2.2);
   ctx.fillText(rect.percentChangeStr, rect.startX + rect.width / 2 - rect.percentChangeStr.length * fontSize/30*9, rect.startY + rect.height / 2.2 + fontSize);
-// console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
 }
 
 canvas.onmousemove = function(e) {
@@ -505,11 +502,6 @@ canvas.onmousemove = function(e) {
       x = e.clientX - domRect.left,
       y = e.clientY - domRect.top,
       i = 0, r;
-// console.log(domRect);
-// console.log(`e.clientX, e.clientY: ${e.clientX}, ${e.clientY}`)
-// console.log(`x, y: ${x}, ${y}`);
-// console.log(`${rect.startX}\n${rect.startY}`);
-// ctx.clearRect(0, 0, canvas.width, canvas.height); // for demo
 
   let hoveredRect;
   while(r = rects[i++]) {
