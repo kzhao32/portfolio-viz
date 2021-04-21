@@ -7,6 +7,7 @@ const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee
 let rects = [];
 // Most recently hovered over rect
 let lastRect;
+const fontFamily = "courier-std";
 
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
@@ -487,7 +488,7 @@ function drawOneRect(rect, borderColor='#000000') {
   ctx.fillRect(rect.startX, rect.startY, rect.width, rect.height);
   ctx.fillStyle = rect.penStyle;
   let fontSize = Math.min(rect.width, rect.height) / 4;
-  ctx.font = `${fontSize}px Courier`;
+  ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.fillText(rect.ticker, rect.startX + rect.width / 2 - rect.ticker.length * fontSize/3, rect.startY + rect.height / 2.2);
   ctx.fillText(rect.percentChangeStr, rect.startX + rect.width / 2 - rect.percentChangeStr.length * fontSize/30*9, rect.startY + rect.height / 2.2 + fontSize);
 // console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
