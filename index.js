@@ -61,10 +61,10 @@ async function drawPortfolioViz(e) {
     let asset = new Asset(ticker, responseJson[i].name, shares, price, percentChange);
 //console.log("asset from responseJson: responseJson[i].ticker = " + responseJson[i].ticker + ", percentChange = " + percentChange);
     // Update data array.
-    console.log(asset)
+// console.log(asset)
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
-    totalChange += price * shares * percentChange/100;
+    totalChange += (price - price / (1 + percentChange / 100)) * shares;
   }
 
   // Determine whether the screen is portrait or landscape.
@@ -94,7 +94,10 @@ async function drawPortfolioViz(e) {
     0,
   );
   let info = document.getElementById("info");
-  info.textContent = "TotalMarketValue = $" + Math.round(totalMarketValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "; Change = " + (totalChange > 0 ? "+" : "") + Math.round(totalChange).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " (" + (totalChange / totalMarketValue * 100).toFixed(2) + "%)";
+
+  // yesterday's closing totalMarketValue = totalMarketValue - totalChange
+  // totalPercentChange = totalChange / (yesterday's closing totalMarketValue)
+  info.textContent = "TotalMarketValue = $" + Math.round(totalMarketValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "; Change = " + (totalChange > 0 ? "+" : "") + Math.round(totalChange).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " (" + (totalChange / (totalMarketValue - totalChange) * 100).toFixed(2) + "%)";
   info.style.color = totalChange > 0 ? "green" : (totalChange < 0 ? "red" : "black");
 }
 
@@ -136,6 +139,14 @@ function drawPortfolioVizRecursive(
       if (percentChangeStr[0] != '-') {
         percentChangeStr = '+' + percentChangeStr;
       }
+      let rectPortion = leftAsset.price * leftAsset.shares / totalMarketValue * 100;
+      let rectPortionDivisor = 0.01;
+      let rectPortionPlaces = 2;
+      // Maximum decimal places is 6 due to the stock API.
+      while (rectPortion < rectPortionDivisor && rectPortionPlaces < 6) {
+        rectPortionDivisor /= 10;
+        rectPortionPlaces++;
+      }
 
       rect = {
         'startX': startX,
@@ -145,8 +156,9 @@ function drawPortfolioVizRecursive(
         'ticker': leftAsset.ticker,
         'name': leftAsset.name,
         'price': leftAsset.price,
+        'percentChange': leftAsset.percentChange,
         'percentChangeStr': percentChangeStr,
-        'portion': `${(leftAsset.price * leftAsset.shares / totalMarketValue * 100).toFixed(2)}%`,
+        'portion': `${rectPortion.toFixed(rectPortionPlaces)}%`,
         'penStyle': penStyle,
         'fillStyle': fillStyle,
       }
@@ -514,7 +526,13 @@ canvas.onmousemove = function(e) {
     }
     lastRect = hoveredRect;
     drawOneRect(hoveredRect, "#FFFFFF");
-    canvas.title = hoveredRect.ticker + (hoveredRect.name.length > 0 ? ("\nName: " + hoveredRect.name) : "") + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
+
+    let amountChangeStr = (hoveredRect.price - hoveredRect.price / (1 + hoveredRect.percentChange / 100)).toFixed(2);
+    if (amountChangeStr[0] != '-') {
+      amountChangeStr = '+' + amountChangeStr;
+    }
+
+    canvas.title = hoveredRect.ticker + (hoveredRect.name.length > 0 ? ("\nName: " + hoveredRect.name) : "") + "\nPrice: " + hoveredRect.price + "\nChange: " + amountChangeStr + " (" + hoveredRect.percentChangeStr + ")" + "\nPortion: " + hoveredRect.portion;
   }
   catch (e) {
     if (e instanceof TypeError) {
