@@ -1,5 +1,4 @@
 // Global
-let assets = []
 let fileOnloadEvent;
 let hasFileBeenUploaded = false;
 // This is for asset box coloring.
@@ -59,16 +58,15 @@ async function drawPortfolioViz(e) {
     let shares = parsedCsv.data[i][1];
     let price = responseJson[response_index].price;
     let percentChange = responseJson[response_index].percent_change;
-    let asset = new Asset(responseJson[response_index].ticker, shares, price, percentChange);
+    let asset = new Asset(responseJson[response_index].ticker, responseJson[response_index].name, shares, price, percentChange);
 //console.log("asset from responseJson: responseJson[response_index].ticker = " + responseJson[response_index].ticker + ", percentChange = " + percentChange);
     // Update data array.
-    assets.push(asset);
+    console.log(asset)
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
     totalChange += price * shares * percentChange;
     response_index++;
   }
-//console.log(assets);
 
   // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -133,8 +131,8 @@ function drawPortfolioVizRecursive(
         height = entireCanvasHeight * portion;
       }
 
-      let [penStyle, fillStyle] = getStyles(leftAsset.percentChange * 100);
-      let percentChangeStr = `${(leftAsset.percentChange * 100).toFixed(2)}%`;
+      let [penStyle, fillStyle] = getStyles(leftAsset.percentChange);
+      let percentChangeStr = `${(leftAsset.percentChange).toFixed(2)}%`;
       if (percentChangeStr[0] != '-') {
         percentChangeStr = '+' + percentChangeStr;
       }
@@ -145,6 +143,7 @@ function drawPortfolioVizRecursive(
         'width': width,
         'height': height,
         'ticker': leftAsset.ticker,
+        'name': leftAsset.name,
         'price': leftAsset.price,
         'percentChangeStr': percentChangeStr,
         'portion': `${(leftAsset.price * leftAsset.shares / totalMarketValue * 100).toFixed(2)}%`,
@@ -242,8 +241,9 @@ setInterval(function() {
 }, 60 * 1000);
 
 class Asset {
-  constructor(ticker, shares, price, percentChange) {
+  constructor(ticker, name, shares, price, percentChange) {
     this.ticker = ticker;
+    this.name = name;
     this.shares = shares;
     this.price = price;
     this.percentChange = percentChange;
@@ -511,7 +511,7 @@ canvas.onmousemove = function(e) {
   }
   try {
     drawOneRect(hoveredRect, "#FFFFFF");
-    canvas.title = hoveredRect.ticker + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
+    canvas.title = hoveredRect.ticker + (hoveredRect.name.length > 0 ? ("\nName: " + hoveredRect.name) : "") + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
   }
   catch (e) {
     if (e instanceof TypeError) {
