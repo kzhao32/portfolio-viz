@@ -548,3 +548,9 @@ canvas.onmousemove = function(e) {
     }
   }
 };
+
+canvas.ondblclick = function(e) {
+  if (typeof lastRect !== "undefined") {
+    window.open(`https://finance.yahoo.com/quote/${lastRect.ticker}`);
+  }
+}
