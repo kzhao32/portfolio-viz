@@ -470,17 +470,14 @@ function drawBorder(ctx, xPos, yPos, width, height, color, thickness=1)
 }
 
 function drawOneRect(rect, borderColor='#000000') {
-  if (typeof(rect) === undefined) {
-    return;
-  }
-
   drawBorder(ctx, rect.startX, rect.startY, rect.width, rect.height, borderColor);
   ctx.fillStyle = rect.fillStyle;
   ctx.fillRect(rect.startX, rect.startY, rect.width, rect.height);
   ctx.fillStyle = rect.penStyle;
-  ctx.font = "30px serif";
-  ctx.fillText(rect.ticker, rect.startX + rect.width / 2 - rect.ticker.length * 10, rect.startY + rect.height / 2);
-  ctx.fillText(rect.percentChangeStr, rect.startX + rect.width / 2 - rect.percentChangeStr.length * 9, rect.startY + rect.height / 2 + 30);
+  let fontSize = Math.min(rect.width, rect.height) / 4;
+  ctx.font = `${fontSize}px Courier`;
+  ctx.fillText(rect.ticker, rect.startX + rect.width / 2 - rect.ticker.length * fontSize/3, rect.startY + rect.height / 2.2);
+  ctx.fillText(rect.percentChangeStr, rect.startX + rect.width / 2 - rect.percentChangeStr.length * fontSize/30*9, rect.startY + rect.height / 2.2 + fontSize);
 // console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
 }
 
@@ -512,6 +509,16 @@ canvas.onmousemove = function(e) {
       drawOneRect(r);
     }
   }
-  drawOneRect(hoveredRect, "#FFFFFF");
-  canvas.title = hoveredRect.ticker + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
+  try {
+    drawOneRect(hoveredRect, "#FFFFFF");
+    canvas.title = hoveredRect.ticker + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
+  }
+  catch (e) {
+    if (e instanceof TypeError) {
+      // ignore :(
+    }
+    else {
+      throw e;
+    }
+  }
 };
