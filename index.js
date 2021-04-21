@@ -4,7 +4,13 @@ let fileOnloadEvent;
 let hasFileBeenUploaded = false;
 // This is for asset box coloring.
 const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837", "#00441b"];
+// Array of the rects
+let rects = [];
+// Most recently hovered over rect
+let lastRect;
 
+let canvas = document.getElementById("myCanvas");
+let ctx = canvas.getContext("2d");
 let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
 
@@ -69,9 +75,7 @@ async function drawPortfolioViz(e) {
   let height = (window.innerHeight > 0) ? window.innerHeight : screen.height;
 
   // Draw the portfolio map.
-  let canvas = document.getElementById("myCanvas");
   canvas.style.display = "block";
-  let ctx = canvas.getContext("2d");
   // Adjust the canvas size.
   ctx.canvas.width = width * 0.97;
   ctx.canvas.height = height * 0.95;
@@ -80,12 +84,14 @@ async function drawPortfolioViz(e) {
   let remainingCanvasHeight = ctx.canvas.height;
   let remainingMarketValue = totalMarketValue;
 
+  rects = [];
   drawPortfolioVizRecursive(
     ctx,
     marketValueHeap,
     remainingCanvasWidth,
     remainingCanvasHeight,
     remainingMarketValue,
+    totalMarketValue,
     0,
     0,
   );
@@ -100,6 +106,7 @@ function drawPortfolioVizRecursive(
   entireCanvasWidth,
   entireCanvasHeight,
   entireMarketValue,
+  totalMarketValue,
   startX,
   startY,
 ) {
@@ -125,19 +132,29 @@ function drawPortfolioVizRecursive(
         width = entireCanvasWidth;
         height = entireCanvasHeight * portion;
       }
+
       let [penStyle, fillStyle] = getStyles(leftAsset.percentChange * 100);
-      drawBorder(ctx, startX, startY, width, height);
-      ctx.fillStyle = fillStyle;
-      ctx.fillRect(startX, startY, width, height);
-      ctx.fillStyle = penStyle;
-      ctx.font = "30px serif";
-      ctx.fillText(leftAsset.ticker, startX + width / 2 - leftAsset.ticker.length * 10, startY + height / 2);
       let percentChangeStr = `${(leftAsset.percentChange * 100).toFixed(2)}%`;
       if (percentChangeStr[0] != '-') {
         percentChangeStr = '+' + percentChangeStr;
       }
-      ctx.fillText(percentChangeStr, startX + width / 2 - percentChangeStr.length * 9, startY + height / 2 + 30);
-console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
+
+      rect = {
+        'startX': startX,
+        'startY': startY,
+        'width': width,
+        'height': height,
+        'ticker': leftAsset.ticker,
+        'price': leftAsset.price,
+        'percentChangeStr': percentChangeStr,
+        'portion': `${(leftAsset.price * leftAsset.shares / totalMarketValue * 100).toFixed(2)}%`,
+        'penStyle': penStyle,
+        'fillStyle': fillStyle,
+      }
+
+      rects.push(rect);
+
+      drawOneRect(rect);
 
       entireMarketValue -= leftAsset.price * leftAsset.shares;
       // If remaining area is portrait...
@@ -178,6 +195,7 @@ console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" +
         /* entireCanvasWidth = */ isPortrait ? entireCanvasWidth : entireCanvasWidth * leftMarketValue / entireMarketValue, // if isPortrait, then make a horizontal cut, so (left and right) xor (top and bottom) get the entire width
         /* entireCanvasHeight = */ isPortrait ? entireCanvasHeight * leftMarketValue / entireMarketValue : entireCanvasHeight,
         /* entireMarketValue = */ leftMarketValue,
+        totalMarketValue,
         /* startX = */ startX,
         /* startY = */ startY,
       );
@@ -188,6 +206,7 @@ console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" +
         /* entireCanvasWidth = */ isPortrait ? entireCanvasWidth : entireCanvasWidth * rightMarketValue / entireMarketValue,
         /* entireCanvasHeight = */ isPortrait ? entireCanvasHeight * rightMarketValue / entireMarketValue : entireCanvasHeight,
         /* entireMarketValue = */ rightMarketValue,
+        totalMarketValue,
         /* startX = */ isPortrait ? startX : startX + leftMarketValue / entireMarketValue * entireCanvasWidth, // if isPortrait, then make a horizontal cut, so startX stays the same, and adjust startY proportionally to market value
         /* startY = */ isPortrait ? startY + leftMarketValue / entireMarketValue * entireCanvasHeight : startY,
       );
@@ -444,8 +463,55 @@ function getStyles(percentChange) {
   return [penStyle, "#" + ("0"+(Number(red).toString(16))).slice(-2) + ("0"+(Number(green).toString(16))).slice(-2) + ("0"+(Number(blue).toString(16))).slice(-2)];
 }
 
-function drawBorder(ctx, xPos, yPos, width, height, thickness=1)
+function drawBorder(ctx, xPos, yPos, width, height, color, thickness=1)
 {
-  ctx.fillStyle='#000';
+  ctx.fillStyle = color;
   ctx.fillRect(xPos - (thickness), yPos - (thickness), width + (thickness * 2), height + (thickness * 2));
 }
+
+function drawOneRect(rect, borderColor='#000000') {
+  if (typeof(rect) === undefined) {
+    return;
+  }
+
+  drawBorder(ctx, rect.startX, rect.startY, rect.width, rect.height, borderColor);
+  ctx.fillStyle = rect.fillStyle;
+  ctx.fillRect(rect.startX, rect.startY, rect.width, rect.height);
+  ctx.fillStyle = rect.penStyle;
+  ctx.font = "30px serif";
+  ctx.fillText(rect.ticker, rect.startX + rect.width / 2 - rect.ticker.length * 10, rect.startY + rect.height / 2);
+  ctx.fillText(rect.percentChangeStr, rect.startX + rect.width / 2 - rect.percentChangeStr.length * 9, rect.startY + rect.height / 2 + 30);
+// console.log("for " + leftAsset.ticker + " " + percentChangeStr + ", fillRect(" + startX + ", " + startY + ", " + width + ", " + height + ")");
+}
+
+canvas.onmousemove = function(e) {
+
+  // important: correct mouse position:
+  var domRect = this.getBoundingClientRect(),
+      x = e.clientX - domRect.left,
+      y = e.clientY - domRect.top,
+      i = 0, r;
+// console.log(domRect);
+// console.log(`e.clientX, e.clientY: ${e.clientX}, ${e.clientY}`)
+// console.log(`x, y: ${x}, ${y}`);
+// console.log(`${rect.startX}\n${rect.startY}`);
+
+  // ctx.clearRect(0, 0, canvas.width, canvas.height); // for demo
+
+  let hoveredRect;
+  while(r = rects[i++]) {
+    // add a single rect to path:
+    ctx.beginPath();
+    ctx.rect(r.startX, r.startY, r.width, r.height);
+
+    // check if we hover it, fill red, if not fill it blue
+    if (ctx.isPointInPath(x, y)) {
+      hoveredRect = r;
+    }
+    else {
+      drawOneRect(r);
+    }
+  }
+  drawOneRect(hoveredRect, "#FFFFFF");
+  canvas.title = hoveredRect.ticker + "\nPrice: " + hoveredRect.price + "\nPortion: " + hoveredRect.portion;
+};
