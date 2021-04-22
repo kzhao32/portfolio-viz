@@ -2,6 +2,7 @@
 let fileOnloadEvent;
 let hasFileBeenUploaded = false;
 let lock = false;
+let stocksToPriceCheck;
 let tickersDict;
 let stockData;
 // This is for asset box coloring.
@@ -18,8 +19,6 @@ let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
 
 
-console.log("start");
-
 fileInput.onchange = function(e) {
   let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
   fReader.readAsText(file);
@@ -33,10 +32,8 @@ fReader.onload = async function(e) {
   // Parse uploaded file.
   const parsedCsv = Papa.parse(e.target.result);
 
-  while (lock);
-  lock = true;
   tickersDict = {} // create a dictionary because not all stocks will return data. E.g. ALDR
-  let stocksToPriceCheck = []
+  stocksToPriceCheck = []
   for (let i = 0; i < parsedCsv.data.length; i++) {
     // Account for header and empty rows.
     if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
@@ -46,10 +43,9 @@ fReader.onload = async function(e) {
     tickersDict[ticker] = parsedCsv.data[i][1]
     stocksToPriceCheck.push(ticker)
   }
-  lock = false;
 
   // Get stock prices here.
-  await updateStockData(stocksToPriceCheck);
+  await updateStockData();
 
   drawPortfolioViz();
 
@@ -57,10 +53,9 @@ fReader.onload = async function(e) {
   if (!hasFileBeenUploaded) {
     // Refresh data at set interval.
     setInterval(async function() {
-console.log("refreshing data");
-      await updateStockData(stocksToPriceCheck);
+      await updateStockData();
       drawPortfolioViz();
-    }, 60 * 1000);
+    }, 10 * 1000);
 
     document.getElementById("tutorial").style.display = "none";
     hasFileBeenUploaded = true;
@@ -75,8 +70,6 @@ function drawPortfolioViz() {
   let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
 
-  while (lock);
-  lock = true;
   for (let i = 0; i < stockData.length; i++) {
     let ticker = stockData[i].ticker;
     let shares = tickersDict[ticker];
@@ -88,7 +81,6 @@ function drawPortfolioViz() {
     totalMarketValue += price * shares;
     totalChange += (price - price / (1 + percentChange / 100)) * shares;
   }
-  lock = false;
 
   // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -262,21 +254,17 @@ window.onresize = function() {
   timerId = setTimeout(resizedWindow, 1000);
 };
 
-async function updateStockData(tickers) {
-console.log("getting data");
+async function updateStockData() {
   // Get stock prices here.
   let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
     },
-    body: JSON.stringify({'tickers': tickers})
+    body: JSON.stringify({'tickers': stocksToPriceCheck})
   });
 
-  while (lock);
-  lock = true;
   stockData = await response.json();
-  lock = false;
 }
 
 class Asset {
@@ -498,7 +486,7 @@ function getStyles(percentChange) {
   let red = Math.round((rightRed - leftRed)/(rightValue - leftValue)*(percentChange - leftValue) + leftRed);
   let green = Math.round((rightGreen - leftGreen)/(rightValue - leftValue)*(percentChange - leftValue) + leftGreen);
   let blue = Math.round((rightBlue - leftBlue)/(rightValue - leftValue)*(percentChange - leftValue) + leftBlue);
-//console.log("for percentChange = " + percentChange + ", leftColor = " + leftColor + ", leftValue = " + leftValue + ", rightColor = " + rightColor + ", rightValue = " + rightValue + ", returning " + "#" + ("0"+(Number(red).toString(16))).slice(-2) + ("0"+(Number(green).toString(16))).slice(-2) + ("0"+(Number(blue).toString(16))).slice(-2));
+
   return [penStyle, "#" + ("0"+(Number(red).toString(16))).slice(-2) + ("0"+(Number(green).toString(16))).slice(-2) + ("0"+(Number(blue).toString(16))).slice(-2)];
 }
 
@@ -571,4 +559,9 @@ canvas.ondblclick = function(e) {
   if (typeof lastRect !== "undefined") {
     window.open(`https://finance.yahoo.com/quote/${lastRect.ticker}`);
   }
+}
+
+function getCurrentTime() {
+  const current = new Date();
+  return `${current.getHours()}:${current.getMinutes()}:${current.getSeconds()}.${current.getMilliseconds()}`
 }
