@@ -560,8 +560,3 @@ canvas.ondblclick = function(e) {
     window.open(`https://finance.yahoo.com/quote/${lastRect.ticker}`);
   }
 }
-
-function getCurrentTime() {
-  const current = new Date();
-  return `${current.getHours()}:${current.getMinutes()}:${current.getSeconds()}.${current.getMilliseconds()}`
-}
