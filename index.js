@@ -55,7 +55,7 @@ fReader.onload = async function(e) {
     setInterval(async function() {
       await updateStockData();
       drawPortfolioViz();
-    }, 10 * 1000);
+    }, 60 * 1000);
 
     document.getElementById("tutorial").style.display = "none";
     hasFileBeenUploaded = true;
@@ -79,7 +79,7 @@ function drawPortfolioViz() {
     // Update data array.
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
-    totalChange += (price - price / (1 + percentChange / 100)) * shares;
+    totalChange += (price - price / (1 + (percentChange ? percentChange : 0) / 100)) * shares;
   }
 
   // Determine whether the screen is portrait or landscape.
@@ -150,9 +150,16 @@ function drawPortfolioVizRecursive(
       }
 
       let [penStyle, fillStyle] = getStyles(leftAsset.percentChange);
-      let percentChangeStr = `${(leftAsset.percentChange).toFixed(2)}%`;
-      if (percentChangeStr[0] != '-') {
-        percentChangeStr = '+' + percentChangeStr;
+      let percentChangeStr;
+      if (!leftAsset.percentChange) {
+        leftAsset.percentChange = 0;
+        percentChangeStr = "N/A";
+      }
+      else {
+        percentChangeStr = `${(leftAsset.percentChange).toFixed(2)}%`;
+        if (percentChangeStr[0] != '-') {
+          percentChangeStr = '+' + percentChangeStr;
+        }
       }
       let rectPortion = leftAsset.price * leftAsset.shares / totalMarketValue * 100;
       let rectPortionDivisor = 0.01;
@@ -261,7 +268,10 @@ async function updateStockData() {
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
     },
-    body: JSON.stringify({'tickers': stocksToPriceCheck})
+    body: JSON.stringify({
+      'tickers': stocksToPriceCheck,
+      //'interval': 'ytd',
+    })
   });
 
   stockData = await response.json();
@@ -392,6 +402,9 @@ BinaryHeap.prototype = {
 };
 
 function getStyles(percentChange) {
+  if (!percentChange) {
+      return ["#FFFFFF", "#000000"]
+  }
   // Handle extreme ends.
   if (percentChange < -10) {
       return ["#FFFFFF", fillStyles[0]]
