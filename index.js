@@ -403,7 +403,7 @@ BinaryHeap.prototype = {
 };
 
 function getStyles(percentChange) {
-  if (!percentChange) {
+  if (percentChange == null) {
       return ["#FFFFFF", "#000000"]
   }
   // Handle extreme ends.
