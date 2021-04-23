@@ -150,7 +150,7 @@ function drawPortfolioVizRecursive(
 
       let [penStyle, fillStyle] = getStyles(leftAsset.percentChange);
       let percentChangeStr;
-      if (!leftAsset.percentChange) {
+      if (leftAsset.percentChange === null) {
         leftAsset.percentChange = 0;
         percentChangeStr = "N/A";
       }
@@ -403,7 +403,7 @@ BinaryHeap.prototype = {
 };
 
 function getStyles(percentChange) {
-  if (percentChange == null) {
+  if (percentChange === null) {
       return ["#FFFFFF", "#000000"]
   }
   // Handle extreme ends.
