@@ -5,18 +5,17 @@ let lock = false;
 let stocksToPriceCheck;
 let tickersDict;
 let stockData;
-// This is for asset box coloring.
-const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837", "#00441b"];
-// Array of the rects
+let marketEpochTime;
 let rects = [];
-// Most recently hovered over rect
-let lastRect;
-const fontFamily = "courier-std";
-
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
 let fileInput = document.getElementById("myfile");
 let fReader = new FileReader();
+// Previously hovered over rect
+let lastRect;
+// This is for asset box coloring.
+const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837", "#00441b"];
+const fontFamily = "courier-std";
 
 
 fileInput.onchange = function(e) {
@@ -60,7 +59,6 @@ fReader.onload = async function(e) {
     document.getElementById("tutorial").style.display = "none";
     hasFileBeenUploaded = true;
   }
-
 }
 
 function drawPortfolioViz() {
@@ -113,6 +111,7 @@ function drawPortfolioViz() {
   // yesterday's closing totalMarketValue = totalMarketValue - totalChange
   // totalPercentChange = totalChange / (yesterday's closing totalMarketValue)
   info.textContent = "TotalMarketValue = $" + Math.round(totalMarketValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "; Change = " + (totalChange > 0 ? "+" : "") + Math.round(totalChange).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " (" + (totalChange / (totalMarketValue - totalChange) * 100).toFixed(2) + "%)";
+  // "; marketTime = " + getReadableTime();
   info.style.color = totalChange > 0 ? "green" : (totalChange < 0 ? "red" : "black");
 }
 
@@ -274,7 +273,9 @@ async function updateStockData() {
     })
   });
 
-  stockData = await response.json();
+  let responseJson = await response.json();
+  stockData = responseJson['stock_data'];
+  marketEpochTime = responseJson['market_time'];
 }
 
 class Asset {
@@ -572,4 +573,9 @@ canvas.ondblclick = function(e) {
   if (typeof lastRect !== "undefined") {
     window.open(`https://finance.yahoo.com/quote/${lastRect.ticker}`);
   }
+}
+
+function getReadableTime() {
+  let date = new Date(marketEpochTime * 1000);
+  return `${date.getHours()}:${('0' + date.getMinutes()).substr(-2)}:${('0' + date.getSeconds()).substr(-2)} ET`;
 }
