@@ -1,0 +1,6 @@
+ARKK - disruptive innovation
+VOO - S&P 500 Index
+VTI - CRSP US Total Market Index.
+VUG - CRSP US Large Cap Growth Index
+VWIGX - International Growth
+VWNAX - US Stock Large-Cap Value
