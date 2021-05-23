@@ -1,7 +1,8 @@
-ticker,shares
-AMD,100
-T,179.403
-VTSAX,1601.058
-VFFSX,1088.45408811
-GOOG,33.935
-VIIIX,58.536
+ticker,shares,
+AMD,100,
+T,182.339,
+VTSAX,1193.335,
+VFFSX,1096.579825,https://investor.vanguard.com/mutual-funds/profile/pe/overview/7554?dbOnly=false&crossover=true&planSummaryMask=425886&SelectedPlanId=093926&FundIntExt=INT&InstFund=true&RedemptionFee=true&intPort=7554
+GOOG,33.935,
+VIIIX,58.536,
+AMZN,13,

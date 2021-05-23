@@ -1,16 +1,14 @@
 // Global
-let fileOnloadEvent;
 let hasFileBeenUploaded = false;
 let lock = false;
-let stocksToPriceCheck;
 let tickersDict;
+let stocksToPriceCheck;
 let stockData;
 let marketEpochTime;
 let rects = [];
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
 let fileInput = document.getElementById("myfile");
-let fReader = new FileReader();
 // Previously hovered over rect
 let lastRect;
 // This is for asset box coloring.
@@ -19,20 +17,38 @@ const fontFamily = "courier-std";
 
 
 fileInput.onchange = function(e) {
-  let file = this.files[0];  // fileInput.files[0] is first file if multiple were selected
-  fReader.readAsText(file);
-  document.title = file.name + " Portfolio Map";
+  let fileInputFile = this.files[0];  // fileInput.files[0] is first file if multiple were selected
+  document.title = fileInputFile.name + " Portfolio Map";
+  if (typeof (FileReader) == "undefined") {
+    alert("This browser does not support HTML5.");
+  }
+  let fileReader = new FileReader();
+  if (fileInputFile.name.toUpperCase().indexOf(".XLS") > 0) {
+    fileReader.onload = async function (e) {
+      // Borrowed from https://jsfiddle.net/5kftjcg1/
+      // Read the Excel File data.
+      let workbook = XLSX.read(e.target.result, { type: 'binary' });
+      // Fetch the name of First Sheet.
+      let firstSheet = workbook.SheetNames[0];
+      // Read all rows from First Sheet into csv.
+      let excelRows = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet]);
+      processFileInputChangeFromCsv(excelRows);
+    };
+    fileReader.readAsBinaryString(fileInputFile);
+  } else {
+    fileReader.onload = async function (e) {
+      processFileInputChangeFromCsv(e.target.result);
+    };
+    fileReader.readAsText(fileInputFile);
+  }
 }
 
-fReader.onload = async function(e) {
-  // Allow global access to event.
-  fileOnloadEvent = e;
-
+async function processFileInputChangeFromCsv(csv) {
   // Parse uploaded file.
-  const parsedCsv = Papa.parse(e.target.result);
+  const parsedCsv = Papa.parse(csv);
 
   tickersDict = {} // create a dictionary because not all stocks will return data. E.g. ALDR
-  stocksToPriceCheck = []
+
   for (let i = 0; i < parsedCsv.data.length; i++) {
     // Account for header and empty rows.
     if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
@@ -40,7 +56,11 @@ fReader.onload = async function(e) {
     }
     let ticker = parsedCsv.data[i][0].trim().toUpperCase().replace(".", "-")
     tickersDict[ticker] = parsedCsv.data[i][1]
-    stocksToPriceCheck.push(ticker)
+  }
+
+  stocksToPriceCheck = [];
+  for (ticker in tickersDict) {
+    stocksToPriceCheck.push(ticker);
   }
 
   // Get stock prices here.
@@ -68,7 +88,7 @@ function drawPortfolioViz() {
   let totalChange = 0;
   let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
 
-  for (let i = 0; i < stockData.length; i++) {
+  for (let i = 0; stockData && i < stockData.length; i++) {
     let ticker = stockData[i].ticker;
     let shares = tickersDict[ticker];
     let price = stockData[i].price;
