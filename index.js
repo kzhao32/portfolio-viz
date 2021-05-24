@@ -63,7 +63,6 @@ async function processFileInputChangeFromCsv(csv) {
     stocksToPriceCheck.push(ticker);
   }
 
-  // Get stock prices here.
   await updateStockData();
 
   drawPortfolioViz();
@@ -72,13 +71,20 @@ async function processFileInputChangeFromCsv(csv) {
   if (!hasFileBeenUploaded) {
     // Refresh data at set interval.
     setInterval(async function() {
-      await updateStockData();
-      drawPortfolioViz();
+      refreshDataAndRedraw();
     }, 60 * 1000);
 
     document.getElementById("tutorial").style.display = "none";
     hasFileBeenUploaded = true;
   }
+}
+
+async function refreshDataAndRedraw() {
+  if (!hasFileBeenUploaded) {
+    return;
+  }
+  await updateStockData();
+  drawPortfolioViz();
 }
 
 function drawPortfolioViz() {
@@ -283,15 +289,18 @@ window.onresize = function() {
 
 async function updateStockData() {
   // Get stock prices here.
+  let requestBody = {};
+  requestBody['tickers'] = stocksToPriceCheck;
+  let time_since = document.getElementById("time_since").value;
+  if (time_since != "1d") {
+    requestBody['time_since'] = time_since;
+  }
   let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
     },
-    body: JSON.stringify({
-      'tickers': stocksToPriceCheck,
-      //'interval': 'ytd',
-    })
+    body: JSON.stringify(requestBody)
   });
 
   let responseJson = await response.json();

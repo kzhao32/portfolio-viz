@@ -22,18 +22,17 @@
 <div>
   <div id="tutorial">Upload a csv or excel file with 2 columns (ticker, number_of_shares).</div>
   <input id="myfile" type="file"/>
-  <!--
-  <span>Interval: </span>
-  <select id="interval" style="font-family: courier-std">
-    <option value="1D">1D</option>
-    <option value="1W">1W</option>
-    <option value="1M">1M</option>
-    <option value="6M">6M</option>
-    <option value="YTD">YTD</option>
-    <option value="1Y">1Y</option>
-    <option value="5Y">5Y</option>
+  <span>Time: </span>
+  <select id="time_since" style="font-family: courier-std" onchange="{ refreshDataAndRedraw(); }">
+    <option value="1d">1D</option>
+    <option value="5d">1W</option>
+    <option value="1mo">1M</option>
+    <option value="6mo">6M</option>
+    <option value="ytd">YTD</option>
+    <option value="1y">1Y</option>
+    <option value="5y">5Y</option>
   </select>
-  <span>&nbsp;</span>-->
+  <span>&nbsp;</span>
   <span id="totalMarketValueStr"></span>
   <span id="totalMarketValue" style="font-family: courier-std"></span>
   <span>&nbsp;</span>
