@@ -90,9 +90,10 @@ async function refreshDataAndRedraw() {
 function drawPortfolioViz() {
   // Assume that responses come back in the same order that stocksToPriceCheck requested.
   // Then need to filter out header and empty rows again to get the index to match with the responses.
+  let percentChanges = [];
+  let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
   let totalMarketValue = 0;
   let totalChange = 0;
-  let marketValueHeap = new BinaryHeap(function(asset) { return -asset.price * asset.shares; });
 
   for (let i = 0; stockData && i < stockData.length; i++) {
     let ticker = stockData[i].ticker;
@@ -101,10 +102,12 @@ function drawPortfolioViz() {
     let percentChange = stockData[i].percent_change;
     let asset = new Asset(ticker, stockData[i].name, shares, price, percentChange);
     // Update data array.
+    percentChanges.push(percentChange);
     marketValueHeap.push(asset);
     totalMarketValue += price * shares;
     totalChange += (price - price / (1 + (percentChange ? percentChange : 0) / 100)) * shares;
   }
+  let percentChangeStandardDeviation = getStandardDeviation(percentChanges);
 
   // Determine whether the screen is portrait or landscape.
   let width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
@@ -131,6 +134,7 @@ function drawPortfolioViz() {
     totalMarketValue,
     0,
     0,
+    percentChangeStandardDeviation,
   );
 
   // yesterday's closing totalMarketValue = totalMarketValue - totalChange
@@ -151,6 +155,7 @@ function drawPortfolioVizRecursive(
   totalMarketValue,
   startX,
   startY,
+  percentChangeStandardDeviation,
 ) {
   // Get the next top asset
   // Draw a rectangle hamburger-style into the remaining canvas space
@@ -175,7 +180,7 @@ function drawPortfolioVizRecursive(
         height = entireCanvasHeight * portion;
       }
 
-      let [penStyle, fillStyle] = getStyles(leftAsset.percentChange);
+      let [penStyle, fillStyle] = getStyles(leftAsset.percentChange, percentChangeStandardDeviation);
       let percentChangeStr;
       if (leftAsset.percentChange === null) {
         leftAsset.percentChange = 0;
@@ -257,6 +262,7 @@ function drawPortfolioVizRecursive(
         totalMarketValue,
         /* startX = */ startX,
         /* startY = */ startY,
+        percentChangeStandardDeviation,
       );
       // draw right/bottom side of the portfolio
       drawPortfolioVizRecursive(
@@ -268,6 +274,7 @@ function drawPortfolioVizRecursive(
         totalMarketValue,
         /* startX = */ isPortrait ? startX : startX + leftMarketValue / entireMarketValue * entireCanvasWidth, // if isPortrait, then make a horizontal cut, so startX stays the same, and adjust startY proportionally to market value
         /* startY = */ isPortrait ? startY + leftMarketValue / entireMarketValue * entireCanvasHeight : startY,
+        percentChangeStandardDeviation,
       );
     }
   }
@@ -316,6 +323,13 @@ class Asset {
     this.price = price;
     this.percentChange = percentChange;
   }
+}
+
+// Borrowed from https://stackoverflow.com/questions/7343890/standard-deviation-javascript
+function getStandardDeviation (array) {
+  const n = array.length
+  const mean = array.reduce((a, b) => a + b) / n
+  return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
 }
 
 // Taken from Eloquent JavaScript.
@@ -432,15 +446,15 @@ BinaryHeap.prototype = {
   }
 };
 
-function getStyles(percentChange) {
+function getStyles(percentChange, percentChangeStandardDeviation) {
   if (percentChange === null) {
       return ["#FFFFFF", "#000000"]
   }
   // Handle extreme ends.
-  if (percentChange < -10) {
+  if (percentChange < -3.0 * percentChangeStandardDeviation) {
       return ["#FFFFFF", fillStyles[0]]
   }
-  if (percentChange > 10) {
+  if (percentChange > 3.0 * percentChangeStandardDeviation) {
       return ["#FFFFFF", fillStyles[fillStyles.length - 1]]
   }
   // Compute the left and right color and value.
@@ -450,76 +464,78 @@ function getStyles(percentChange) {
   let rightColor = fillStyles[7];
   let rightValue = 0.5;
   let penStyle = "#000000";
-  if (percentChange < -2.5) {
+  if (percentChange < -2.5 * percentChangeStandardDeviation) {
       leftColor = fillStyles[0];
-      leftValue = -10.0;
+      leftValue = -3.0;
       rightColor = fillStyles[1];
       rightValue = -2.5;
       penStyle = "#FFFFFF";
   }
-  else if (percentChange < -2.0) {
+  else if (percentChange < -2.0 * percentChangeStandardDeviation) {
       leftColor = fillStyles[1];
       leftValue = -2.5;
       rightColor = fillStyles[2];
       rightValue = -2.0;
       penStyle = "#FFFFFF";
   }
-  else if (percentChange < -1.5) {
+  else if (percentChange < -1.5 * percentChangeStandardDeviation) {
       leftColor = fillStyles[2];
       leftValue = -2.0;
       rightColor = fillStyles[3];
       rightValue = -1.5;
   }
-  else if (percentChange < -1.0) {
+  else if (percentChange < -1.0 * percentChangeStandardDeviation) {
       leftColor = fillStyles[3];
       leftValue = -1.5;
       rightColor = fillStyles[4];
       rightValue = -1.0;
   }
-  else if (percentChange < -0.5) {
+  else if (percentChange < -0.5 * percentChangeStandardDeviation) {
       leftColor = fillStyles[4];
       leftValue = -1.0;
       rightColor = fillStyles[5];
       rightValue = -0.5;
   }
-  else if (percentChange < 0.0) {
+  else if (percentChange < 0.0 * percentChangeStandardDeviation) {
       leftColor = fillStyles[5];
       leftValue = -0.5;
       rightColor = fillStyles[6];
       rightValue = 0.0;
   }
-  else if (percentChange > 2.5) {
+  else if (percentChange > 2.5 * percentChangeStandardDeviation) {
       leftColor = fillStyles[11];
       leftValue = 2.5;
       rightColor = fillStyles[12];
-      rightValue = 10.0;
+      rightValue = 3.0;
       penStyle = "#FFFFFF";
   }
-  else if (percentChange > 2.0) {
+  else if (percentChange > 2.0 * percentChangeStandardDeviation) {
       leftColor = fillStyles[10];
       leftValue = 2.0;
       rightColor = fillStyles[11];
       rightValue = 2.5;
       penStyle = "#FFFFFF";
   }
-  else if (percentChange > 1.5) {
+  else if (percentChange > 1.5 * percentChangeStandardDeviation) {
       leftColor = fillStyles[9];
       leftValue = 1.5;
       rightColor = fillStyles[10];
       rightValue = 2.0;
   }
-  else if (percentChange > 1.0) {
+  else if (percentChange > 1.0 * percentChangeStandardDeviation) {
       leftColor = fillStyles[8];
       leftValue = 1.0;
       rightColor = fillStyles[9];
       rightValue = 1.5;
   }
-  else if (percentChange > 0.5) {
+  else if (percentChange > 0.5 * percentChangeStandardDeviation) {
       leftColor = fillStyles[7];
       leftValue = 0.5;
       rightColor = fillStyles[8];
       rightValue = 1.0;
   }
+  leftValue *= percentChangeStandardDeviation;
+  rightValue *= percentChangeStandardDeviation;
   let leftRed = parseInt(leftColor.substring(1, 3), 16);
   let leftGreen = parseInt(leftColor.substring(3, 5), 16);
   let leftBlue = parseInt(leftColor.substring(5, 7), 16);
