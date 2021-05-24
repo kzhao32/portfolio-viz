@@ -31,11 +31,11 @@ fileInput.onchange = function(e) {
       // Fetch the name of First Sheet.
       let firstSheet = workbook.SheetNames[0];
       // Read all rows from First Sheet into csv.
-      let excelRows = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet]);
-      processFileInputChangeFromCsv(excelRows);
+      let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet]);
+      processFileInputChangeFromCsv(csvData);
     };
     fileReader.readAsBinaryString(fileInputFile);
-  } else {
+  } else { // Csv file
     fileReader.onload = async function (e) {
       processFileInputChangeFromCsv(e.target.result);
     };
@@ -126,13 +126,14 @@ function drawPortfolioViz() {
     0,
     0,
   );
-  let info = document.getElementById("info");
 
   // yesterday's closing totalMarketValue = totalMarketValue - totalChange
   // totalPercentChange = totalChange / (yesterday's closing totalMarketValue)
-  info.textContent = "TotalMarketValue = $" + Math.round(totalMarketValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "; Change = " + (totalChange > 0 ? "+" : "") + Math.round(totalChange).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " (" + (totalChange / (totalMarketValue - totalChange) * 100).toFixed(2) + "%)";
-  // "; marketTime = " + getReadableTime();
-  info.style.color = totalChange > 0 ? "green" : (totalChange < 0 ? "red" : "black");
+  document.getElementById("totalMarketValueStr").textContent = "TotalMarketValue: ";
+  document.getElementById("totalMarketValue").textContent = "$" + Math.round(totalMarketValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  document.getElementById("changeStr").textContent = "Change: ";
+  document.getElementById("change").textContent = (totalChange > 0 ? "+" : "") + ("$" + Math.round(totalChange).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")).replace("$-", "-$") + " (" + (totalChange > 0 ? "+" : "") + (totalChange / (totalMarketValue - totalChange) * 100).toFixed(2) + "%)";
+  document.getElementById("change").style.color = totalChange > 0 ? "green" : (totalChange < 0 ? "red" : "black");
 }
 
 function drawPortfolioVizRecursive(
