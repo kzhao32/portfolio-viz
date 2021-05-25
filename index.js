@@ -51,11 +51,11 @@ async function processFileInputChangeFromCsv(csv) {
 
   for (let i = 0; i < parsedCsv.data.length; i++) {
     // Account for header and empty rows.
-    if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1])) {
+    if (parsedCsv.data[i].length < 2 || parsedCsv.data[i][1].length == 0 || isNaN(parsedCsv.data[i][1].replace(",", ""))) {
       continue;
     }
-    let ticker = parsedCsv.data[i][0].trim().toUpperCase().replace(".", "-")
-    tickersDict[ticker] = parsedCsv.data[i][1]
+    let ticker = parsedCsv.data[i][0].trim().toUpperCase().replace(".", "-");
+    tickersDict[ticker] = parseFloat(parsedCsv.data[i][1].replace(",", ""));
   }
 
   stocksToPriceCheck = [];
