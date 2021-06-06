@@ -15,6 +15,8 @@ let lastRect;
 const fillStyles = ["#67000d", "#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837", "#00441b"];
 const fontFamily = "courier-std";
 
+updateInputDisplay();  // In case a non-default option was cached by the browser.
+
 
 fileInput.onchange = function(e) {
   let fileInputFile = this.files[0];  // fileInput.files[0] is first file if multiple were selected
@@ -32,18 +34,18 @@ fileInput.onchange = function(e) {
       let firstSheet = workbook.SheetNames[0];
       // Read all rows from First Sheet into csv.
       let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet]);
-      processFileInputChangeFromCsv(csvData);
+      processInputChangeFromCsv(csvData);
     };
     fileReader.readAsBinaryString(fileInputFile);
   } else { // Csv file
     fileReader.onload = async function (e) {
-      processFileInputChangeFromCsv(e.target.result);
+      processInputChangeFromCsv(e.target.result);
     };
     fileReader.readAsText(fileInputFile);
   }
 }
 
-async function processFileInputChangeFromCsv(csv) {
+async function processInputChangeFromCsv(csv) {
   // Parse uploaded file.
   const parsedCsv = Papa.parse(csv);
 
@@ -624,4 +626,26 @@ canvas.ondblclick = function(e) {
 function getReadableTime() {
   let date = new Date(marketEpochTime * 1000);
   return `${date.getHours()}:${('0' + date.getMinutes()).substr(-2)}:${('0' + date.getSeconds()).substr(-2)} ET`;
+}
+
+function updateInputDisplay() {
+  const inputType = document.getElementById('input-type').value;
+  const myfileInput = document.getElementById('myfile');
+  const mytextInput = document.getElementById('mytext');
+  if (inputType === 'file') {
+    mytextInput.classList.remove('inline');
+    mytextInput.classList.add('hidden');
+    myfileInput.classList.remove('hidden');
+    myfileInput.classList.add('inline');
+  }
+  else if (inputType === 'text') {
+    myfileInput.classList.remove('inline');
+    myfileInput.classList.add('hidden');
+    mytextInput.classList.remove('hidden');
+    mytextInput.classList.add('inline');
+  }
+}
+
+function onMytextSubmit() {
+  processInputChangeFromCsv(document.getElementById('mytext-input').value);
 }

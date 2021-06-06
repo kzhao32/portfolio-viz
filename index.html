@@ -4,6 +4,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portfolio Map</title>
 
+  <link rel="stylesheet" href="index.css">
+
   <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/xlsx.full.min.js"></script>
 
@@ -20,8 +22,20 @@
 </div>
 
 <div>
-  <div id="tutorial">Upload a csv or excel file with 2 columns (ticker, number_of_shares).</div>
-  <input id="myfile" type="file" style="width: 200px"/>
+  <div id="tutorial">Upload a csv, upload an excel file, or input csv text with 2 columns (ticker, number_of_shares).</div>
+
+  <span>Input:</span>
+  <select id="input-type" style="font-family: courier-std; margin-right: 50px;" onchange="{ updateInputDisplay(); }">
+    <option value="file">File</option>
+    <option value="text">Text</option>
+  </select>
+
+  <input id="myfile" type="file" style="width: 200px;" class="inline" />
+  <span id="mytext" class="hidden">
+    <textarea id="mytext-input" rows=1 cols=10 style="width:100 px; height: 1em;"></textarea>
+    <button id="mytext-button" type="button" style="margin-right: 50px;" onclick="{ onMytextSubmit(); }">Submit</button>
+  </span>
+  
   <span>Time:</span>
   <select id="time_since" style="font-family: courier-std" onchange="{ refreshDataAndRedraw(); }">
     <option value="1d">1D</option>
