@@ -119,7 +119,7 @@ function drawPortfolioViz() {
   canvas.style.display = "block";
   // Adjust the canvas size.
   ctx.canvas.width = width * 0.97;
-  ctx.canvas.height = height * 0.95;
+  ctx.canvas.height = height * 0.90;
 
   let remainingCanvasWidth = ctx.canvas.width;
   let remainingCanvasHeight = ctx.canvas.height;

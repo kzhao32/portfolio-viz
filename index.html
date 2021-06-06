@@ -20,37 +20,41 @@
 </div>
 
 <div>
-  <div id="tutorial">Upload a csv, upload an excel file, or input csv text with 2 columns (ticker, number_of_shares).</div>
+  <div id="tutorial">Upload a csv or excel file, or input csv text with 2 columns (ticker, number_of_shares).</div>
 
   <span>Input:</span>
-  <select id="input-type" style="font-family: courier-std; margin-right: 50px;" onchange="{ updateInputDisplay(); }">
+  <select id="input-type" style="font-family: courier-std; margin-right: 10px;" onchange="{ updateInputDisplay(); }">
     <option value="file">File</option>
     <option value="text">Text</option>
   </select>
 
   <input id="myfile" type="file" style="width: 200px;" class="inline" />
-  <span id="mytext" class="hidden">
-    <textarea id="mytext-input" rows=1 cols=10 style="width:100px; height:3em;"></textarea>
+  <span id="mytext" class="hidden" style="white-space: nowrap;">
+    <textarea id="mytext-input" rows=1 cols=10 style="width:180px; height:3.5em;">ticker, number_of_shares&#10;AMC, 237&#10;GME, 53.9</textarea>
     <button id="mytext-button" type="button" style="margin-right: 50px;" onclick="{ onMytextSubmit(); }">Submit</button>
   </span>
   
-  <span>Time:</span>
-  <select id="time_since" style="font-family: courier-std" onchange="{ refreshDataAndRedraw(); }">
-    <option value="1d">1D</option>
-    <option value="5d">5D</option>
-    <option value="1mo">1M</option>
-    <option value="6mo">6M</option>
-    <option value="ytd">YTD</option>
-    <option value="1y">1Y</option>
-    <option value="5y">5Y</option>
-    <option value="max">Max</option>
-  </select>
-  <span>&nbsp;</span>
-  <span id="totalMarketValueStr"></span>
-  <span id="totalMarketValue" style="font-family: courier-std"></span>
-  <span>&nbsp;</span>
-  <span id="changeStr"></span>
-  <span id="change" style="font-family: courier-std"></span>
+  <span style="white-space: nowrap; margin-right: 20px;">
+    <span>Time:</span>
+    <select id="time_since" style="font-family: courier-std" onchange="{ refreshDataAndRedraw(); }">
+      <option value="1d">1D</option>
+      <option value="5d">5D</option>
+      <option value="1mo">1M</option>
+      <option value="6mo">6M</option>
+      <option value="ytd">YTD</option>
+      <option value="1y">1Y</option>
+      <option value="5y">5Y</option>
+      <option value="max">Max</option>
+    </select>
+  </span>
+
+  <span style="white-space: nowrap;">
+    <span id="totalMarketValueStr"></span>
+    <span id="totalMarketValue" style="font-family: courier-std"></span>
+    <span>&nbsp;</span>
+    <span id="changeStr"></span>
+    <span id="change" style="font-family: courier-std"></span>
+  </span>
 </div>
 
 <script src="index.js"></script>
