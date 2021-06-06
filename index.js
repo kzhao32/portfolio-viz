@@ -633,16 +633,12 @@ function updateInputDisplay() {
   const myfileInput = document.getElementById('myfile');
   const mytextInput = document.getElementById('mytext');
   if (inputType === 'file') {
-    mytextInput.classList.remove('inline');
-    mytextInput.classList.add('hidden');
-    myfileInput.classList.remove('hidden');
-    myfileInput.classList.add('inline');
+    mytextInput.style.display = "none";
+    myfileInput.style.display = "inline";
   }
   else if (inputType === 'text') {
-    myfileInput.classList.remove('inline');
-    myfileInput.classList.add('hidden');
-    mytextInput.classList.remove('hidden');
-    mytextInput.classList.add('inline');
+    mytextInput.style.display = "inline";
+    myfileInput.style.display = "none";
   }
 }
 
