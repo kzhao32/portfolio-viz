@@ -304,7 +304,7 @@ async function updateStockData() {
   if (time_since != "1d") {
     requestBody['time_since'] = time_since;
   }
-  let response = await fetch('https://us-central1-stock-price-api.cloudfunctions.net/stock-price-api', {
+  let response = await fetch('https://stock-price-api-ns3aembjca-uc.a.run.app', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
